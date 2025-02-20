@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom'; // 添加 Link
 import 'bootstrap/dist/css/bootstrap.min.css';
 
 function Login({ setToken }) {
@@ -14,9 +14,9 @@ function Login({ setToken }) {
     try {
       const response = await axios.post('/api/login/', { username, password });
       const token = response.data.access;
-      setToken(token); // 儲存 token
-      localStorage.setItem('token', token); // 持久化儲存
-      navigate('/products'); // 跳轉到產品頁面
+      setToken(token);
+      localStorage.setItem('token', token);
+      navigate('/products');
     } catch (err) {
       setError('登入失敗，請檢查用戶名或密碼');
     }
@@ -49,6 +49,9 @@ function Login({ setToken }) {
         {error && <p className="text-danger">{error}</p>}
         <button type="submit" className="btn btn-primary">登入</button>
       </form>
+      <p className="mt-3">
+        還沒有帳號？<Link to="/register">點擊註冊</Link>
+      </p>
     </div>
   );
 }
