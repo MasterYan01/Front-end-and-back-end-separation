@@ -1,17 +1,22 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import 'bootstrap/dist/css/bootstrap.min.css';
-import './App.css';
+import { useNavigate } from 'react-router-dom';
 
-function App() {
+function Products({ token }) {
   const [products, setProducts] = useState([]);
   const [formData, setFormData] = useState({ name: '', price: '', description: '' });
   const [editId, setEditId] = useState(null);
+  const navigate = useNavigate();
 
-  // 獲取產品列表
   useEffect(() => {
-    fetchProducts();
-  }, []);
+    if (!token) {
+      navigate('/login'); // 未登入則跳轉
+    } else {
+      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`; // 設置 token
+      fetchProducts();
+    }
+  }, [token, navigate]);
 
   const fetchProducts = async () => {
     try {
@@ -22,21 +27,17 @@ function App() {
     }
   };
 
-  // 處理表單輸入
   const handleInputChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  // 新增或更新產品
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
       if (editId) {
-        // 更新產品
         await axios.put(`/api/products/${editId}/`, formData);
         setEditId(null);
       } else {
-        // 新增產品
         await axios.post('/api/products/', formData);
       }
       setFormData({ name: '', price: '', description: '' });
@@ -46,13 +47,11 @@ function App() {
     }
   };
 
-  // 編輯產品
   const handleEdit = (product) => {
     setFormData({ name: product.name, price: product.price, description: product.description });
     setEditId(product.id);
   };
 
-  // 刪除產品
   const handleDelete = async (id) => {
     try {
       await axios.delete(`/api/products/${id}/`);
@@ -65,8 +64,6 @@ function App() {
   return (
     <div className="container mt-5">
       <h1 className="mb-4">電商產品管理</h1>
-
-      {/* 產品表單 */}
       <form onSubmit={handleSubmit} className="mb-4">
         <div className="row g-3">
           <div className="col">
@@ -109,8 +106,6 @@ function App() {
           </div>
         </div>
       </form>
-
-      {/* 產品列表 */}
       <table className="table table-striped">
         <thead>
           <tr>
@@ -150,4 +145,4 @@ function App() {
   );
 }
 
-export default App;
+export default Products;
