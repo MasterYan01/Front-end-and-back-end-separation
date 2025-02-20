@@ -3,7 +3,7 @@ import axios from 'axios';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { useNavigate } from 'react-router-dom';
 
-function Products({ token }) {
+function Products({ token, setToken }) {  // 接收 setToken 作為 prop
   const [products, setProducts] = useState([]);
   const [formData, setFormData] = useState({ name: '', price: '', description: '' });
   const [editId, setEditId] = useState(null);
@@ -61,9 +61,22 @@ function Products({ token }) {
     }
   };
 
+  // 登出功能
+  const handleLogout = () => {
+    setToken('');           // 清空 token
+    localStorage.removeItem('token'); // 移除本地儲存的 token
+    navigate('/login');     // 跳轉到登入頁面
+  };
+
   return (
     <div className="container mt-5">
-      <h1 className="mb-4">電商產品管理</h1>
+      <div className="d-flex justify-content-between align-items-center mb-4">
+        <h1>電商產品管理</h1>
+        <button className="btn btn-secondary" onClick={handleLogout}>
+          登出
+        </button>
+      </div>
+
       <form onSubmit={handleSubmit} className="mb-4">
         <div className="row g-3">
           <div className="col">
@@ -106,6 +119,7 @@ function Products({ token }) {
           </div>
         </div>
       </form>
+
       <table className="table table-striped">
         <thead>
           <tr>

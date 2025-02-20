@@ -18,8 +18,8 @@ function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/login" element={<Login setToken={setToken} />} />
-        <Route path="/products" element={<Products token={token} />} />
-        <Route path="/" element={<Login setToken={setToken} />} /> {/* 預設跳到登入 */}
+        <Route path="/products" element={<Products token={token} setToken={setToken} />} /> {/* 傳遞 setToken */}
+        <Route path="/" element={<Login setToken={setToken} />} />
       </Routes>
     </BrowserRouter>
   );
