@@ -8,7 +8,10 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework.permissions import IsAuthenticated, IsAdminUser  # 引入 IsAdminUser
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter
-
+# ----- 數據統計儀表板功能開始 -----
+from django.db.models import Count, Sum
+from rest_framework.views import APIView
+# ----- 數據統計儀表板功能結束 -----
 # 登入視圖
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     @classmethod
@@ -34,7 +37,19 @@ class RegisterAPIView(generics.CreateAPIView):
             "user": serializer.data,
             "message": "註冊成功"
         }, status=status.HTTP_201_CREATED)
+# ----- 數據統計儀表板功能開始 -----
+class StatsAPIView(APIView):
+    permission_classes = [IsAuthenticated, IsAdminUser]  # 僅管理員可訪問
 
+    def get(self, request):
+        total_products = Product.objects.count()
+        total_value = Product.objects.aggregate(Sum('price'))['price__sum'] or 0
+        stats = {
+            'total_products': total_products,
+            'total_value': float(total_value),  # 轉為浮點數以避免 Decimal 問題
+        }
+        return Response(stats)
+# ----- 數據統計儀表板功能結束 -----
 # 產品列表與創建視圖
 class ProductListCreate(generics.ListCreateAPIView):
     queryset = Product.objects.all()

@@ -157,6 +157,16 @@ function Products({ token, setToken }) {
       {/* ----- 即時通知功能結束 ----- */}
       <div className="d-flex justify-content-between align-items-center mb-4">
         <h1>電商產品管理</h1>
+        {/* ----- 數據統計儀表板功能開始 ----- */}
+        {isAdmin && (
+            <button
+              className="btn btn-outline-info me-2"
+              onClick={() => navigate('/dashboard')}
+            >
+              查看儀表板
+            </button>
+          )}
+          {/* ----- 數據統計儀表板功能結束 ----- */}
         <button className="btn btn-secondary" onClick={handleLogout}>
           登出
         </button>
