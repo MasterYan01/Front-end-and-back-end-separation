@@ -3,24 +3,31 @@ import axios from 'axios';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { useNavigate } from 'react-router-dom';
 
-function Products({ token, setToken }) {  // 接收 setToken 作為 prop
+function Products({ token, setToken }) {
   const [products, setProducts] = useState([]);
   const [formData, setFormData] = useState({ name: '', price: '', description: '' });
   const [editId, setEditId] = useState(null);
+  const [searchTerm, setSearchTerm] = useState(''); // 搜索關鍵字
+  const [priceMin, setPriceMin] = useState(''); // 價格下限
+  const [priceMax, setPriceMax] = useState(''); // 價格上限
   const navigate = useNavigate();
 
   useEffect(() => {
     if (!token) {
-      navigate('/login'); // 未登入則跳轉
+      navigate('/login');
     } else {
-      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`; // 設置 token
+      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
       fetchProducts();
     }
-  }, [token, navigate]);
+  }, [token, navigate, searchTerm, priceMin, priceMax]); // 當搜索或篩選條件改變時重新獲取
 
   const fetchProducts = async () => {
     try {
-      const response = await axios.get('/api/products/');
+      const params = {};
+      if (searchTerm) params.search = searchTerm;
+      if (priceMin) params.price_min = priceMin;
+      if (priceMax) params.price_max = priceMax;
+      const response = await axios.get('/api/products/', { params });
       setProducts(response.data);
     } catch (error) {
       console.error('Error fetching products:', error);
@@ -61,11 +68,10 @@ function Products({ token, setToken }) {  // 接收 setToken 作為 prop
     }
   };
 
-  // 登出功能
   const handleLogout = () => {
-    setToken('');           // 清空 token
-    localStorage.removeItem('token'); // 移除本地儲存的 token
-    navigate('/login');     // 跳轉到登入頁面
+    setToken('');
+    localStorage.removeItem('token');
+    navigate('/login');
   };
 
   return (
@@ -77,6 +83,38 @@ function Products({ token, setToken }) {  // 接收 setToken 作為 prop
         </button>
       </div>
 
+      {/* 搜索與篩選區域 */}
+      <div className="row mb-4">
+        <div className="col-md-4">
+          <input
+            type="text"
+            className="form-control"
+            placeholder="搜索產品名稱或描述..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+        <div className="col-md-2">
+          <input
+            type="number"
+            className="form-control"
+            placeholder="價格下限"
+            value={priceMin}
+            onChange={(e) => setPriceMin(e.target.value)}
+          />
+        </div>
+        <div className="col-md-2">
+          <input
+            type="number"
+            className="form-control"
+            placeholder="價格上限"
+            value={priceMax}
+            onChange={(e) => setPriceMax(e.target.value)}
+          />
+        </div>
+      </div>
+
+      {/* 產品表單 */}
       <form onSubmit={handleSubmit} className="mb-4">
         <div className="row g-3">
           <div className="col">
@@ -120,6 +158,7 @@ function Products({ token, setToken }) {  // 接收 setToken 作為 prop
         </div>
       </form>
 
+      {/* 產品列表 */}
       <table className="table table-striped">
         <thead>
           <tr>
