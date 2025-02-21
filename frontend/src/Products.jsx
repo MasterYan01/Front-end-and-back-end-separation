@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { useNavigate } from 'react-router-dom';
+import { jwtDecode } from 'jwt-decode';
 
 function Products({ token, setToken }) {
   const [products, setProducts] = useState([]);
@@ -12,6 +13,7 @@ function Products({ token, setToken }) {
   const [priceMax, setPriceMax] = useState('');
   const [page, setPage] = useState(1);
   const [pageInfo, setPageInfo] = useState({ next: null, previous: null, count: 0 });
+  const [isAdmin, setIsAdmin] = useState(false); // 用於儲存是否為管理員
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -19,6 +21,8 @@ function Products({ token, setToken }) {
       navigate('/login');
     } else {
       axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      const decodedToken = jwtDecode(token); // 解析 token
+      setIsAdmin(decodedToken.is_staff); // 從 token 中獲取 is_staff
       fetchProducts();
     }
   }, [token, navigate, searchTerm, priceMin, priceMax, page]);
@@ -44,10 +48,7 @@ function Products({ token, setToken }) {
   const handleInputChange = (e) => {
     const { name, value, files } = e.target;
     if (name === 'image' && files[0]) {
-      setFormData({ ...formData, image: files[0] });
-      // 顯示預覽
-      const previewUrl = URL.createObjectURL(files[0]);
-      setFormData((prev) => ({ ...prev, imagePreview: previewUrl }));
+      setFormData({ ...formData, image: files[0], imagePreview: URL.createObjectURL(files[0]) });
     } else {
       setFormData({ ...formData, [name]: value });
     }
@@ -86,7 +87,8 @@ function Products({ token, setToken }) {
       name: product.name,
       price: product.price,
       description: product.description,
-      image: null, // 圖片不預設載入，僅在選擇新圖片時更新
+      image: null,
+      imagePreview: null,
     });
     setEditId(product.id);
   };
@@ -154,65 +156,67 @@ function Products({ token, setToken }) {
         </div>
       </div>
 
-      {/* 產品表單 */}
-      <form onSubmit={handleSubmit} className="mb-4" encType="multipart/form-data">
-        <div className="row g-3">
-          <div className="col">
-            <input
-              type="text"
-              name="name"
-              className="form-control"
-              placeholder="產品名稱"
-              value={formData.name}
-              onChange={handleInputChange}
-              required
-            />
-          </div>
-          <div className="col">
-            <input
-              type="number"
-              name="price"
-              className="form-control"
-              placeholder="價格"
-              value={formData.price}
-              onChange={handleInputChange}
-              required
-            />
-          </div>
-          <div className="col">
-            <input
-              type="text"
-              name="description"
-              className="form-control"
-              placeholder="描述"
-              value={formData.description}
-              onChange={handleInputChange}
-              required
-            />
-          </div>
-          <div className="col">
-            <input
-              type="file"
-              name="image"
-              className="form-control"
-              accept="image/*"
-              onChange={handleInputChange}
-            />
-            {formData.imagePreview && (
-              <img
-                src={formData.imagePreview}
-                alt="Preview"
-                style={{ maxWidth: '100px', height: 'auto', marginTop: '10px' }}
+      {/* 產品表單（僅管理員可見） */}
+      {isAdmin && (
+        <form onSubmit={handleSubmit} className="mb-4" encType="multipart/form-data">
+          <div className="row g-3">
+            <div className="col">
+              <input
+                type="text"
+                name="name"
+                className="form-control"
+                placeholder="產品名稱"
+                value={formData.name}
+                onChange={handleInputChange}
+                required
               />
-            )}
+            </div>
+            <div className="col">
+              <input
+                type="number"
+                name="price"
+                className="form-control"
+                placeholder="價格"
+                value={formData.price}
+                onChange={handleInputChange}
+                required
+              />
+            </div>
+            <div className="col">
+              <input
+                type="text"
+                name="description"
+                className="form-control"
+                placeholder="描述"
+                value={formData.description}
+                onChange={handleInputChange}
+                required
+              />
+            </div>
+            <div className="col">
+              <input
+                type="file"
+                name="image"
+                className="form-control"
+                accept="image/*"
+                onChange={handleInputChange}
+              />
+              {formData.imagePreview && (
+                <img
+                  src={formData.imagePreview}
+                  alt="Preview"
+                  style={{ maxWidth: '100px', height: 'auto', marginTop: '10px' }}
+                />
+              )}
+            </div>
+            <div className="col-auto">
+              <button type="submit" className="btn btn-primary">
+                {editId ? '更新' : '新增'}
+              </button>
+            </div>
           </div>
-          <div className="col-auto">
-            <button type="submit" className="btn btn-primary">
-              {editId ? '更新' : '新增'}
-            </button>
-          </div>
-        </div>
-      </form>
+        </form>
+      )}
 
       {/* 產品列表 */}
       <table className="table table-striped">
@@ -223,7 +227,7 @@ function Products({ token, setToken }) {
             <th>價格</th>
             <th>描述</th>
             <th>圖片</th>
-            <th>操作</th>
+            {isAdmin && <th>操作</th>} {/* 僅管理員顯示操作欄 */}
           </tr>
         </thead>
         <tbody>
@@ -234,34 +238,30 @@ function Products({ token, setToken }) {
               <td>{product.price}</td>
               <td>{product.description}</td>
               <td>
-                {product.image ? (
+                {product.image && (
                   <img
                     src={product.image}
                     alt={product.name}
                     style={{ maxWidth: '100px', height: 'auto' }}
-                    onError={(e) => {
-                      console.log('Image load error:', e);
-                      e.target.src = '/path/to/placeholder.jpg'; // 預設圖片
-                    }}
                   />
-                ) : (
-                  <span>無圖片</span>
                 )}
               </td>
-              <td>
-                <button
-                  className="btn btn-warning btn-sm me-2"
-                  onClick={() => handleEdit(product)}
-                >
-                  編輯
-                </button>
-                <button
-                  className="btn btn-danger btn-sm"
-                  onClick={() => handleDelete(product.id)}
-                >
-                  刪除
-                </button>
-              </td>
+              {isAdmin && ( // 僅管理員顯示編輯與刪除按鈕
+                <td>
+                  <button
+                    className="btn btn-warning btn-sm me-2"
+                    onClick={() => handleEdit(product)}
+                  >
+                    編輯
+                  </button>
+                  <button
+                    className="btn btn-danger btn-sm"
+                    onClick={() => handleDelete(product.id)}
+                  >
+                    刪除
+                  </button>
+                </td>
+              )}
             </tr>
           ))}
         </tbody>

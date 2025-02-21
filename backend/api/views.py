@@ -5,7 +5,7 @@ from .models import Product
 from .serializers import RegisterSerializer, ProductSerializer
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, IsAdminUser  # 引入 IsAdminUser
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter
 
@@ -15,6 +15,7 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     def get_token(cls, user):
         token = super().get_token(user)
         token['username'] = user.username
+        token['is_staff'] = user.is_staff  # 在 token 中添加 is_staff
         return token
 
 class CustomTokenObtainPairView(TokenObtainPairView):
@@ -38,11 +39,16 @@ class RegisterAPIView(generics.CreateAPIView):
 class ProductListCreate(generics.ListCreateAPIView):
     queryset = Product.objects.all()
     serializer_class = ProductSerializer
-    permission_classes = [IsAuthenticated]
     filter_backends = [DjangoFilterBackend, SearchFilter]
     filterset_fields = ['price']
     search_fields = ['name', 'description']
-    pagination_class = generics.ListCreateAPIView.pagination_class  # 使用默認分頁（已在 settings.py 配置）
+    pagination_class = generics.ListCreateAPIView.pagination_class
+
+    def get_permissions(self):
+        # GET（查看）只需要登入，POST（創建）需要管理員權限
+        if self.request.method == 'POST':
+            return [IsAuthenticated(), IsAdminUser()]
+        return [IsAuthenticated()]
 
     def get_queryset(self):
         queryset = Product.objects.all()
@@ -54,7 +60,13 @@ class ProductListCreate(generics.ListCreateAPIView):
             queryset = queryset.filter(price__lte=price_max)
         return queryset
 
+# 產品詳情、更新與刪除視圖
 class ProductRetrieveUpdateDelete(generics.RetrieveUpdateDestroyAPIView):
     queryset = Product.objects.all()
     serializer_class = ProductSerializer
-    permission_classes = [IsAuthenticated]
+
+    def get_permissions(self):
+        # GET（查看）只需要登入，PUT/DELETE（更新/刪除）需要管理員權限
+        if self.request.method in ['PUT', 'DELETE']:
+            return [IsAuthenticated(), IsAdminUser()]
+        return [IsAuthenticated()]
