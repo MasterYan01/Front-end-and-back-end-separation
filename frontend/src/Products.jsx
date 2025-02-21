@@ -3,6 +3,10 @@ import axios from 'axios';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { useNavigate, Link } from 'react-router-dom'; // 更新導入
 import { jwtDecode } from 'jwt-decode';
+// ----- 即時通知功能開始 -----
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css'; // 導入樣式
+// ----- 即時通知功能結束 -----
 function Products({ token, setToken }) {
   const [products, setProducts] = useState([]);
   const [formData, setFormData] = useState({ name: '', price: '', description: '', image: null, imagePreview: null });
@@ -41,6 +45,10 @@ function Products({ token, setToken }) {
       });
     } catch (error) {
       console.error('Error fetching products:', error);
+      // ----- 即時通知功能開始 -----
+      toast.error('無法載入產品列表，請稍後再試');
+      // ----- 即時通知功能結束 -----
+      
     }
   };
 
@@ -69,15 +77,25 @@ function Products({ token, setToken }) {
           headers: { 'Content-Type': 'multipart/form-data' },
         });
         setEditId(null);
+        // ----- 即時通知功能開始 -----
+        toast.success('產品更新成功');
+        // ----- 即時通知功能結束 -----
       } else {
         await axios.post('/api/products/', data, {
           headers: { 'Content-Type': 'multipart/form-data' },
+          
         });
+        // ----- 即時通知功能開始 -----
+        toast.success('產品新增成功');
+        // ----- 即時通知功能結束 -----
       }
       setFormData({ name: '', price: '', description: '', image: null, imagePreview: null });
       fetchProducts();
     } catch (error) {
       console.error('Error saving product:', error);
+      // ----- 即時通知功能開始 -----
+      toast.error('操作失敗，請檢查輸入或稍後再試');
+      // ----- 即時通知功能結束 -----
     }
   };
 
@@ -96,8 +114,14 @@ function Products({ token, setToken }) {
     try {
       await axios.delete(`/api/products/${id}/`);
       fetchProducts();
+      // ----- 即時通知功能開始 -----
+      toast.success('產品刪除成功');
+      // ----- 即時通知功能結束 -----
     } catch (error) {
       console.error('Error deleting product:', error);
+      // ----- 即時通知功能開始 -----
+      toast.error('刪除失敗，請稍後再試');
+      // ----- 即時通知功能結束 -----
     }
   };
 
@@ -117,6 +141,20 @@ function Products({ token, setToken }) {
 
   return (
     <div className="container mt-5">
+      {/* ----- 即時通知功能開始 ----- */}
+      <ToastContainer
+        position="top-right" // 通知顯示位置
+        autoClose={3000}    // 自動關閉時間（3秒）
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="light"
+      />
+      {/* ----- 即時通知功能結束 ----- */}
       <div className="d-flex justify-content-between align-items-center mb-4">
         <h1>電商產品管理</h1>
         <button className="btn btn-secondary" onClick={handleLogout}>
