@@ -1,9 +1,8 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import 'bootstrap/dist/css/bootstrap.min.css';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom'; // 更新導入
 import { jwtDecode } from 'jwt-decode';
-
 function Products({ token, setToken }) {
   const [products, setProducts] = useState([]);
   const [formData, setFormData] = useState({ name: '', price: '', description: '', image: null, imagePreview: null });
@@ -234,7 +233,13 @@ function Products({ token, setToken }) {
           {products.map((product) => (
             <tr key={product.id}>
               <td>{product.id}</td>
-              <td>{product.name}</td>
+              {/* ----- 產品詳情頁面功能開始 ----- */}
+              <td>
+                <Link to={`/products/${product.id}`} className="text-primary">
+                  {product.name}
+                </Link>
+              </td>
+              {/* ----- 產品詳情頁面功能結束 ----- */}
               <td>{product.price}</td>
               <td>{product.description}</td>
               <td>
