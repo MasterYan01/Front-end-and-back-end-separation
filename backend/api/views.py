@@ -6,8 +6,8 @@ from .serializers import RegisterSerializer, ProductSerializer
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework.permissions import IsAuthenticated
-from django_filters.rest_framework import DjangoFilterBackend  # 添加 Django Filter
-from rest_framework.filters import SearchFilter  # 添加搜索過濾器
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework.filters import SearchFilter
 
 # 登入視圖
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
@@ -39,13 +39,13 @@ class ProductListCreate(generics.ListCreateAPIView):
     queryset = Product.objects.all()
     serializer_class = ProductSerializer
     permission_classes = [IsAuthenticated]
-    filter_backends = [DjangoFilterBackend, SearchFilter]  # 添加過濾器和搜索
-    filterset_fields = ['price']  # 支援按價格篩選
-    search_fields = ['name', 'description']  # 支援按名稱和描述搜索
+    filter_backends = [DjangoFilterBackend, SearchFilter]
+    filterset_fields = ['price']
+    search_fields = ['name', 'description']
+    pagination_class = generics.ListCreateAPIView.pagination_class  # 使用默認分頁（已在 settings.py 配置）
 
     def get_queryset(self):
         queryset = Product.objects.all()
-        # 自訂價格範圍篩選
         price_min = self.request.query_params.get('price_min', None)
         price_max = self.request.query_params.get('price_max', None)
         if price_min is not None:

@@ -7,9 +7,11 @@ function Products({ token, setToken }) {
   const [products, setProducts] = useState([]);
   const [formData, setFormData] = useState({ name: '', price: '', description: '' });
   const [editId, setEditId] = useState(null);
-  const [searchTerm, setSearchTerm] = useState(''); // 搜索關鍵字
-  const [priceMin, setPriceMin] = useState(''); // 價格下限
-  const [priceMax, setPriceMax] = useState(''); // 價格上限
+  const [searchTerm, setSearchTerm] = useState('');
+  const [priceMin, setPriceMin] = useState('');
+  const [priceMax, setPriceMax] = useState('');
+  const [page, setPage] = useState(1); // 當前頁數
+  const [pageInfo, setPageInfo] = useState({ next: null, previous: null, count: 0 }); // 分頁資訊
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -19,16 +21,21 @@ function Products({ token, setToken }) {
       axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
       fetchProducts();
     }
-  }, [token, navigate, searchTerm, priceMin, priceMax]); // 當搜索或篩選條件改變時重新獲取
+  }, [token, navigate, searchTerm, priceMin, priceMax, page]); // 頁數改變時重新獲取
 
   const fetchProducts = async () => {
     try {
-      const params = {};
+      const params = { page };
       if (searchTerm) params.search = searchTerm;
       if (priceMin) params.price_min = priceMin;
       if (priceMax) params.price_max = priceMax;
       const response = await axios.get('/api/products/', { params });
-      setProducts(response.data);
+      setProducts(response.data.results); // 分頁數據在 results 中
+      setPageInfo({
+        next: response.data.next,
+        previous: response.data.previous,
+        count: response.data.count,
+      });
     } catch (error) {
       console.error('Error fetching products:', error);
     }
@@ -72,6 +79,15 @@ function Products({ token, setToken }) {
     setToken('');
     localStorage.removeItem('token');
     navigate('/login');
+  };
+
+  // 分頁控制
+  const goToPreviousPage = () => {
+    if (pageInfo.previous) setPage(page - 1);
+  };
+
+  const goToNextPage = () => {
+    if (pageInfo.next) setPage(page + 1);
   };
 
   return (
@@ -194,6 +210,25 @@ function Products({ token, setToken }) {
           ))}
         </tbody>
       </table>
+
+      {/* 分頁控制 */}
+      <div className="d-flex justify-content-between mb-4">
+        <button
+          className="btn btn-outline-primary"
+          onClick={goToPreviousPage}
+          disabled={!pageInfo.previous}
+        >
+          上一頁
+        </button>
+        <span>第 {page} 頁 (共 {Math.ceil(pageInfo.count / 5)} 頁)</span>
+        <button
+          className="btn btn-outline-primary"
+          onClick={goToNextPage}
+          disabled={!pageInfo.next}
+        >
+          下一頁
+        </button>
+      </div>
     </div>
   );
 }
