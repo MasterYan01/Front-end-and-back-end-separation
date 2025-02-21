@@ -11,6 +11,10 @@ export default defineConfig({
                                         //您的 Django 服務器可能只監聽 IPv4（127.0.0.1），導致連接被拒絕。
         changeOrigin: true,
       },
+      '/media': {  // 新增媒體文件代理
+        target: 'http://127.0.0.1:8000',
+        changeOrigin: true,
+      },
     },
   },
 })

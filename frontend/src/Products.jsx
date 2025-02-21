@@ -5,13 +5,13 @@ import { useNavigate } from 'react-router-dom';
 
 function Products({ token, setToken }) {
   const [products, setProducts] = useState([]);
-  const [formData, setFormData] = useState({ name: '', price: '', description: '' });
+  const [formData, setFormData] = useState({ name: '', price: '', description: '', image: null, imagePreview: null });
   const [editId, setEditId] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [priceMin, setPriceMin] = useState('');
   const [priceMax, setPriceMax] = useState('');
-  const [page, setPage] = useState(1); // 當前頁數
-  const [pageInfo, setPageInfo] = useState({ next: null, previous: null, count: 0 }); // 分頁資訊
+  const [page, setPage] = useState(1);
+  const [pageInfo, setPageInfo] = useState({ next: null, previous: null, count: 0 });
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -21,7 +21,7 @@ function Products({ token, setToken }) {
       axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
       fetchProducts();
     }
-  }, [token, navigate, searchTerm, priceMin, priceMax, page]); // 頁數改變時重新獲取
+  }, [token, navigate, searchTerm, priceMin, priceMax, page]);
 
   const fetchProducts = async () => {
     try {
@@ -30,7 +30,7 @@ function Products({ token, setToken }) {
       if (priceMin) params.price_min = priceMin;
       if (priceMax) params.price_max = priceMax;
       const response = await axios.get('/api/products/', { params });
-      setProducts(response.data.results); // 分頁數據在 results 中
+      setProducts(response.data.results);
       setPageInfo({
         next: response.data.next,
         previous: response.data.previous,
@@ -42,19 +42,39 @@ function Products({ token, setToken }) {
   };
 
   const handleInputChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value, files } = e.target;
+    if (name === 'image' && files[0]) {
+      setFormData({ ...formData, image: files[0] });
+      // 顯示預覽
+      const previewUrl = URL.createObjectURL(files[0]);
+      setFormData((prev) => ({ ...prev, imagePreview: previewUrl }));
+    } else {
+      setFormData({ ...formData, [name]: value });
+    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    const data = new FormData();
+    data.append('name', formData.name);
+    data.append('price', formData.price);
+    data.append('description', formData.description);
+    if (formData.image) {
+      data.append('image', formData.image);
+    }
+
     try {
       if (editId) {
-        await axios.put(`/api/products/${editId}/`, formData);
+        await axios.put(`/api/products/${editId}/`, data, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        });
         setEditId(null);
       } else {
-        await axios.post('/api/products/', formData);
+        await axios.post('/api/products/', data, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        });
       }
-      setFormData({ name: '', price: '', description: '' });
+      setFormData({ name: '', price: '', description: '', image: null, imagePreview: null });
       fetchProducts();
     } catch (error) {
       console.error('Error saving product:', error);
@@ -62,7 +82,12 @@ function Products({ token, setToken }) {
   };
 
   const handleEdit = (product) => {
-    setFormData({ name: product.name, price: product.price, description: product.description });
+    setFormData({
+      name: product.name,
+      price: product.price,
+      description: product.description,
+      image: null, // 圖片不預設載入，僅在選擇新圖片時更新
+    });
     setEditId(product.id);
   };
 
@@ -81,7 +106,6 @@ function Products({ token, setToken }) {
     navigate('/login');
   };
 
-  // 分頁控制
   const goToPreviousPage = () => {
     if (pageInfo.previous) setPage(page - 1);
   };
@@ -131,7 +155,7 @@ function Products({ token, setToken }) {
       </div>
 
       {/* 產品表單 */}
-      <form onSubmit={handleSubmit} className="mb-4">
+      <form onSubmit={handleSubmit} className="mb-4" encType="multipart/form-data">
         <div className="row g-3">
           <div className="col">
             <input
@@ -166,6 +190,22 @@ function Products({ token, setToken }) {
               required
             />
           </div>
+          <div className="col">
+            <input
+              type="file"
+              name="image"
+              className="form-control"
+              accept="image/*"
+              onChange={handleInputChange}
+            />
+            {formData.imagePreview && (
+              <img
+                src={formData.imagePreview}
+                alt="Preview"
+                style={{ maxWidth: '100px', height: 'auto', marginTop: '10px' }}
+              />
+            )}
+          </div>
           <div className="col-auto">
             <button type="submit" className="btn btn-primary">
               {editId ? '更新' : '新增'}
@@ -182,6 +222,7 @@ function Products({ token, setToken }) {
             <th>名稱</th>
             <th>價格</th>
             <th>描述</th>
+            <th>圖片</th>
             <th>操作</th>
           </tr>
         </thead>
@@ -192,6 +233,21 @@ function Products({ token, setToken }) {
               <td>{product.name}</td>
               <td>{product.price}</td>
               <td>{product.description}</td>
+              <td>
+                {product.image ? (
+                  <img
+                    src={product.image}
+                    alt={product.name}
+                    style={{ maxWidth: '100px', height: 'auto' }}
+                    onError={(e) => {
+                      console.log('Image load error:', e);
+                      e.target.src = '/path/to/placeholder.jpg'; // 預設圖片
+                    }}
+                  />
+                ) : (
+                  <span>無圖片</span>
+                )}
+              </td>
               <td>
                 <button
                   className="btn btn-warning btn-sm me-2"

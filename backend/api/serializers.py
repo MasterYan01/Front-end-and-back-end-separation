@@ -1,12 +1,11 @@
-# backend/api/serializers.py
 from rest_framework import serializers
-from .models import Product  # 從 models.py 導入 Product
+from .models import Product
 from django.contrib.auth.models import User
 
 class ProductSerializer(serializers.ModelSerializer):
     class Meta:
         model = Product
-        fields = ['id', 'name', 'price', 'description']
+        fields = ['id', 'name', 'price', 'description', 'image']  # 添加 image
 
 class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)

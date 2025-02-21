@@ -12,3 +12,7 @@ dist/
 
 # 其他
 .DS_Store
+
+# 忽略媒體文件
+media/
+media/*
